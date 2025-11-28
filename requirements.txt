@@ -3,3 +3,4 @@ firebase-admin
 folium
 streamlit-folium
 plotly
+pandas
