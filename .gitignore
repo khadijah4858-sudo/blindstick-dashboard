@@ -1,0 +1,4 @@
+blindstick-fyp-firebase-adminsdk.json
+*.env
+__pycache__/
+.streamlit/
