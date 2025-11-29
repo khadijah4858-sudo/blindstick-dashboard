@@ -46,18 +46,27 @@ st.markdown("""
         padding: 1rem;
         border-radius: 8px;
         margin: 0.5rem 0;
+        color: #1a1a1a;
+        font-weight: 500;
     }
     .alert-emergency {
         background: #ffebee;
         border-left: 4px solid #f44336;
+        color: #c62828;
     }
     .alert-warning {
         background: #fff3e0;
         border-left: 4px solid #ff9800;
+        color: #e65100;
     }
     .alert-info {
         background: #e3f2fd;
         border-left: 4px solid #2196f3;
+        color: #0d47a1;
+    }
+    .alert-box b {
+        color: inherit;
+        font-weight: 700;
     }
 </style>
 """, unsafe_allow_html=True)
