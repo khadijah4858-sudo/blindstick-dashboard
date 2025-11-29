@@ -3,9 +3,8 @@ import firebase_admin
 from firebase_admin import credentials, db
 import folium
 from streamlit_folium import st_folium
-import plotly.graph_objects as go
 from datetime import datetime
-import json
+import time
 
 # Page config
 st.set_page_config(
@@ -71,16 +70,14 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize Firebase with Streamlit Secrets
+# Initialize Firebase
 @st.cache_resource
 def init_firebase():
     if not firebase_admin._apps:
         try:
-            # Try to load from Streamlit secrets (for cloud deployment)
             firebase_config = dict(st.secrets["firebase"])
             cred = credentials.Certificate(firebase_config)
         except:
-            # Fallback to local file (for local testing)
             cred = credentials.Certificate("blindstick-fyp-firebase-adminsdk.json")
         
         firebase_admin.initialize_app(cred, {
@@ -101,7 +98,6 @@ def get_data():
         return data
     except Exception as e:
         st.error(f"Firebase connection error: {e}")
-        # Return dummy data for testing
         return {
             'location': {'latitude': 2.0456, 'longitude': 102.5677, 'address': 'UiTM Melaka (Demo Data)'},
             'alerts': {'status': 'SAFE', 'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
@@ -114,14 +110,8 @@ def main():
     # Header
     st.markdown('<div class="main-header">🦯 BLINDSTICK LIVE MONITORING</div>', unsafe_allow_html=True)
     
-    # Auto-refresh button
-    col_refresh, col_mode = st.columns([1, 4])
-    with col_refresh:
-        if st.button("🔄 Refresh Data"):
-            st.rerun()
-    
-    with col_mode:
-        auto_refresh = st.checkbox("Auto-refresh (every 5s)", value=False)
+    # Info banner (auto-refresh always ON)
+    st.info("🔄 Dashboard updates automatically every 5 seconds")
     
     # Get data
     data = get_data()
@@ -138,8 +128,7 @@ def main():
     
     with col2:
         battery = data['system'].get('battery', 0)
-        st.metric("🔋 Battery", f"{battery}%", 
-                  delta=f"{battery-80}%" if battery > 80 else f"{battery-80}%")
+        st.metric("🔋 Battery", f"{battery}%")
     
     with col3:
         signal = data['system'].get('signal', 'Unknown')
@@ -206,59 +195,14 @@ def main():
     
     st.divider()
     
-    # Activity Chart
-    col_chart, col_stats = st.columns([3, 1])
-    
-    with col_chart:
-        st.subheader("📈 Activity Chart (Last 24 Hours)")
-        hours = [f"{i:02d}:00" for i in range(0, 24, 2)]
-        
-        # Try to get real data from Firebase, fallback to demo
-        try:
-            alerts_data = data.get('activity', {}).get('hourly_alerts', [5, 8, 3, 12, 7, 15, 9, 11, 6, 4, 8, 10])
-        except:
-            alerts_data = [5, 8, 3, 12, 7, 15, 9, 11, 6, 4, 8, 10]
-        
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=hours,
-            y=alerts_data,
-            mode='lines+markers',
-            name='Obstacle Alerts',
-            line=dict(color='#667eea', width=3),
-            marker=dict(size=8),
-            fill='tozeroy',
-            fillcolor='rgba(102, 126, 234, 0.2)'
-        ))
-        
-        fig.update_layout(
-            xaxis_title="Time",
-            yaxis_title="Alert Count",
-            height=300,
-            hovermode='x unified',
-            showlegend=False
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with col_stats:
-        st.subheader("📊 Statistics")
-        st.metric("Total Alerts", sum(alerts_data) if isinstance(alerts_data, list) else 0)
-        st.metric("Peak Hour", "12:00" if isinstance(alerts_data, list) else "N/A")
-        st.metric("Avg/Hour", f"{sum(alerts_data)/len(alerts_data):.1f}" if isinstance(alerts_data, list) else "N/A")
-    
-    st.divider()
-    
     # Recent Alerts
     st.subheader("📜 Recent Alerts")
     
-    # Try to get real alerts from Firebase
     try:
         recent_alerts = data['alerts'].get('history', [])
         if not recent_alerts or len(recent_alerts) == 0:
             raise Exception("No data")
     except:
-        # Fallback demo data
         recent_alerts = [
             {'time': datetime.now().strftime("%H:%M"), 'type': 'info', 'msg': 'System Online - Demo Mode'},
             {'time': '14:35', 'type': 'warning', 'msg': 'Obstacle Warning (25cm)'},
@@ -279,17 +223,15 @@ def main():
     st.divider()
     col_footer1, col_footer2, col_footer3 = st.columns(3)
     with col_footer1:
-        st.info("💡 **Tip:** Enable auto-refresh for live monitoring")
+        st.info("💡 **Real-time:** Dashboard updates every 5 seconds")
     with col_footer2:
         st.info("🔗 **Share:** Send this URL to caregivers")
     with col_footer3:
         st.info("📱 **Mobile:** Works on all devices")
     
-    # Auto-refresh logic
-    if auto_refresh:
-        import time
-        time.sleep(5)
-        st.rerun()
+    # Auto-refresh (always enabled)
+    time.sleep(5)
+    st.rerun()
 
 if __name__ == "__main__":
     main()
